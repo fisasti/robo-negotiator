@@ -1,0 +1,985 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Dhaval</title>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+<body>
+<div id="app" style="margin: 0 auto; width: 80%;">
+  <v-app class="align-center">
+  <div id="header">
+    <v-card color="transparent" outlined>
+      <img src="images/header.png" id="logo" />
+      <div class="text-justify text-sm-body-2 pa-3">
+        Welcome to RoboNegotiator Results Simulator. This tool will help you visualize how your trade will settle if it matches with your buyer's counteroffer. Our AI enabled smart software considers individual preferences, coupons/discounts/rebates, market data, negotiation parameters/rules and inputs from our AI Server before it matches two sides.<br /><br />
+
+Please configure basic parameters first and then check various applicable options.
+Contact us at info@robonegotiator.com for more information or any technical support.
+      </div>
+    </v-card>
+  </div>
+<!--<v-container class="pa-0 ma-0">
+  <v-row class="pa-0 ma-0">
+    <v-col cols="4" class="pt-0 mt-0 pb-0 mb-0">
+      <v-checkbox
+      v-model="option1"
+      :label="`Applicable Coupon/Discount/Rebate/Incentives`"
+    ></v-checkbox>
+    </v-col>
+    <v-col cols="4" class="pt-0 mt-0 pb-0 mb-0">
+      <v-checkbox
+      v-model="option1"
+      :label="`Charge special seller's charges to buyer (mandatory)`"
+    ></v-checkbox>
+    </v-col>
+    <v-col cols="4" class="pt-0 mt-0 pb-0 mb-0">
+      <v-checkbox
+      v-model="option1"
+      :label="`Define lease parameters`"
+    ></v-checkbox>
+    </v-col>
+</v-container>-->
+<!-- CONFIGURATION-->
+<v-container class="mt-0 pt-0 mb-0 pb-0">
+  <v-row>
+    <v-col cols="12">
+      <v-card class="headline">General Configuration</v-card>
+    </v-col>
+  </v-row>
+  <v-row>
+      <v-col cols="2"><v-select
+        :items="neg_mode_items"
+        v-model="neg_mode"
+        label="Negotiation mode"
+        dense
+      ></v-select>
+    </v-col>
+    <v-col cols="1"><v-select
+        :items="currencies"
+        v-model="currency"
+        label="Currency"
+        dense
+      ></v-select>
+    </v-col>
+    <v-col cols="1"><v-select
+      :items="quantities"
+      v-model="quantity"
+      label="Show Quantity"
+      dense
+    ></v-select>
+    </v-col>
+    <v-col cols="2"><v-select
+      :items="residual_mode_items"
+      v-model="residual_mode"
+      label="Residual Value Calculation"
+      dense
+    ></v-select>
+    </v-col>
+    <v-col cols="2"><v-select
+      :items="lease_neg_fac_items"
+      v-model="lease_neg_fac_control"
+      label="Lease Negotiation Factor"
+      dense
+    ></v-select>
+    </v-col>
+    <v-col cols="2"><v-select
+      :items="fin_neg_items"
+      v-model="fin_neg"
+      label="Finance/Loan Negotiation"
+      dense
+    ></v-select>
+    </v-col>
+    <v-col cols="2"><v-select
+      :items="lease_neg_items"
+      v-model="lease_neg"
+      label="Lease Negotiation"
+      dense
+    ></v-select>
+    </v-col>
+  </v-row>
+  <v-row>
+      <v-col cols="2"><v-select
+        :items="products_range_options"
+        v-model="products_range_control"
+        label="Product Categories"
+        dense
+      ></v-select>
+    </v-col>
+  </v-row>
+</v-container>
+<v-container class="mt-0 pt-0 mb-0 pb-0">
+  <v-row>
+    <v-col cols="6">
+      <v-card color="#000080"  class="pa-0" elevation="5">
+        <v-container>
+          <v-row class="white--text">
+            <v-col cols="3" class="text-h6">Seller Deal</v-col>
+            <v-col cols="8"><v-range-slider
+              v-model="seller_range"
+              :max="seller_max_default"
+              :min="seller_min_default"
+              hide-details
+              thumb-label="always"
+              class="align-left pt-5"
+              color="red"
+              @change="sellerSlider"
+            >
+            </v-range-slider></v-col>
+          </v-row>
+        </v-container>
+      </v-card>
+    </v-col>
+    <v-col cols="6">
+      <v-card dark color="#00aeef" elevation="5">
+        <v-container>
+          <v-row class="black--text">
+            <v-col cols="3" class="text-h6">Buyer Deal</v-col>
+            <v-col cols="8">
+              <v-range-slider
+                v-model="buyer_range"
+                :max="buyer_max_default"
+                :min="buyer_min_default"
+                hide-details
+                class="align-left pt-5"
+                color="black"
+                thumb-label="always"
+                @change="buyerSlider"></v-range-slider>
+            </v-col>
+          </v-row>
+        </v-container>
+      </v-card>
+    </v-col>
+  </v-row>
+</v-container>
+<v-container class="mt-0 pt-0 mb-0 pb-0">
+  <v-row>
+    <v-col cols="5" class="pb-0">
+      <v-checkbox
+      v-model="option1"
+      :label="`Apply Coupon/Discount/Rebate/Incentives (Beneficiary: Buyer)`"
+    ></v-checkbox>
+    </v-col>
+    <v-col cols="7" v-if="option1">
+      <v-slider
+        v-model="buyer_elig_discounts"
+        :max="1000"
+        :min="0"
+        hide-details
+        class="align-left pt-5"
+        thumb-label="always"
+        >
+      </v-slider>
+    </v-col>
+  </v-row>
+  <v-row class="mt-0">
+    <v-col cols="5" class="mt-0">
+      <v-checkbox class="mt-0"
+      v-model="option2"
+      :label="`Credit for special charges (Beneficiary: Seller)`"
+    ></v-checkbox>
+    </v-col>
+    <v-col cols="7" v-if="option2">
+      <v-slider
+        v-model="seller_add_charges"
+        :max="1000"
+        :min="0"
+        hide-details
+        class="align-left pt-1"
+        thumb-label="always"
+        >
+      </v-slider>
+    </v-col>
+  </v-row>
+</v-container>
+<v-container class="mt-0 pt-0 mb-0 pb-0">
+  <v-row  class="mt-0 pt-0 mb-0 pb-0">
+    <v-col cols="6">
+      <v-card outlined class="white--text pa-2" v-bind:class="{'green': match ,  'red': !match}">
+      Result: {{ match ? 'Match' : 'No Match' }}
+    </v-card>
+    </v-col>
+    <!--<v-col cols="4">
+      <v-card outlined class="white--text pa-2" v-bind:class="{'green': match ,  'red': !match}">
+        Final price with no discount: {{ price_no_disc > 0 ? '$' + price_no_disc : '-' }}
+      </v-card>
+    </v-col>-->
+    <v-col cols="6">
+      <v-card outlined class="white--text pa-2" v-bind:class="{'green': match ,  'red': !match}">
+        Final price: {{ price > 0 ? '$' + price : '-' }}
+      </v-card>
+    </v-col>
+  </v-row>
+</v-container>
+<v-container class="mt-0 pt-0 mb-0 pb-0">
+  <v-row>
+    <v-col cols="2">
+      <v-checkbox
+      v-model="show_lease"
+      :label="`Offering Lease Negotiation`"
+    ></v-checkbox>
+    </v-col>
+    <v-col cols="2">
+      <v-checkbox
+      :label="`Offering Financing/ Loan`"
+    ></v-checkbox>
+    </v-col>
+    <v-col cols="3">
+      <v-checkbox
+      :label="`Set up Negotiation Rules/ Parameters`"
+    ></v-checkbox>
+    </v-col>
+    <v-col cols="2">
+      <v-checkbox
+      :label="`Apply Market Data / Adjustments`"
+    ></v-checkbox>
+    </v-col>
+    <v-col cols="3">
+      <v-checkbox
+      :label="`Apply Artificial Intelligence/ Machine Learning`"
+    ></v-checkbox>
+    </v-col>
+  </v-row>
+</v-container>
+<v-container  class="mt-0 pt-0 mb-0 pb-0" v-if="show_lease == 1">
+  <v-row>
+    <v-col cols="12">
+      <v-card class="headline">Lease options</v-card>
+    </v-col>
+  </v-row>
+  <v-row  class="mt-0 pt-0 mb-0 pb-0">
+    <v-col cols="6" class="align-left">
+      <v-container class="align-left"  class="mt-0 pt-0 mb-0 pb-0">
+        <v-row class="align-center">
+          <v-col cols="12">
+            <v-card class="headline">Seller's Input</v-card>
+          </v-col>
+        </v-row>
+        <v-row class="align-left" no-gutters>
+          <v-col cols="2">Term (months)</v-col>
+          <v-col cols="2">Annual Miles</v-col>
+          <v-col cols="2" v-if="residual_mode == 0">Residual Value</v-col>
+          <v-col cols="2" v-if="residual_mode == 1">MSRP</v-col>
+          <v-col cols="2">Money Factor</v-col>
+          <v-col cols="2">State Tax Rate</v-col>
+          <v-col cols="2">Auto Price</v-col>
+        </v-row>
+        <v-row class="pa-0 ma-0">
+          <v-col cols="10">
+          </v-col>
+          <v-col cols="2">
+            <v-text-field class="pt-0 mt-0 ps-2" @change="lease.auto_price[1] = $event" v-model="lease.auto_price[1]" hide-details="auto"></v-text-field>
+          </v-col>
+        </v-row>
+        <!--<v-row no-gutters>
+          <v-col cols="2"></v-col>
+          <v-col cols="2">Annual Miles</v-col>
+          <v-col cols="2"></v-col>
+          <v-col cols="2">Money Factor</v-col>
+          <v-col cols="2"></v-col>
+          <v-col cols="2">Auto Price</v-col>
+        </v-row>-->
+        <v-row class="align-left">
+          <v-col cols="2">
+            <v-slider
+              v-model="lease.term"
+              vertical
+              thumb-label="always"
+              step="12"
+              :min="24"
+              :max="84"
+              tick-size="6"
+            ></v-slider>
+          </v-col>
+          <v-col cols="2">
+            <v-slider
+              v-model="lease.annual_miles"
+              vertical
+              thumb-label="always"
+              :min="5000"
+              :max="20000"
+              step="100"
+              tick-size="160"
+            ></v-slider>
+          </v-col>
+          <v-col cols="2" v-if="residual_mode == 0">
+            <v-slider
+              v-model="lease.residual_value"
+              :min="res_slider_min"
+              :max="res_slider_max"
+              vertical
+              thumb-label="always"
+            
+            >
+            <!--<template v-slot:prepend>
+              <v-text-field
+                :value="lease.residual_value"
+                class="mt-0 pt-0"
+                hide-details
+                single-line
+                type="number"
+                style="width: 60px"
+                @change="lease.residual_value = $event"
+              ></v-text-field>
+            </template>
+            <template v-slot:append>
+              <v-text-field
+                :value="lease.residual_value"
+                class="mt-0 pt-0"
+                hide-details
+                single-line
+                type="number"
+                style="width: 60px"
+                @change="lease.residual_value = $event"
+              ></v-text-field>
+            </template>-->
+            </v-slider>
+          </v-col>
+          <v-col cols="2" v-if="residual_mode == 1">
+            <v-slider
+              v-model="lease.msrp"
+              :min="0"
+              :max="75000"
+              vertical
+              thumb-label="always"
+            >
+            <!--<template v-slot:prepend>
+              <v-text-field
+                :value="lease.msrp"
+                class="mt-0 pt-0"
+                hide-details
+                single-line
+                type="number"
+                style="width: 60px"
+                @change="lease.msrp = $event"
+              ></v-text-field>
+            </template>-->
+            </v-slider>
+            
+          </v-col>
+          <v-col cols="2">
+            <v-slider
+              v-model="lease.money_factor"
+              :min="money_factor_min"
+              :max="money_factor_max"
+              tick-size="791"
+              step="1"
+              vertical
+            ></v-slider>
+          </v-col>
+          <v-col cols="2">
+            <v-slider
+              v-model="lease.state_tax"
+              vertical
+              :min="0"
+              :max="1500"
+              tick-size="61"
+              step="25"
+            ></v-slider>
+          </v-col>
+          <v-col cols="2">
+            <v-range-slider
+            v-model="lease.auto_price"
+              :max="lease.auto_price_max"
+              :min="lease.auto_price_min"
+              hide-details
+              vertical
+              thumb-label="always"
+              class="align-left pt-5"
+            >
+            </v-range-slider>
+          </v-col>
+        </v-row>
+        <v-row class="pb-0 mb-0">
+          <v-col cols="4"></v-col>
+          <v-col cols="2" class="pt-0 mt-0">
+            <v-text-field class="pt-0 mt-0 ps-4" @change="lease.residual_value = $event" v-model="lease.residual_value" hide-details="auto" v-if="residual_mode == 0"></v-text-field>
+            <v-text-field class="pt-0 mt-0 ps-4" @change="lease.msrp = $event" v-model="lease.msrp" hide-details="auto" v-if="residual_mode == 1"></v-text-field>
+          </v-col>
+          <v-col cols="2" class="ps-6 pt-1">
+            {{ this.lease_neg_fac == 1 ? lease.money_factor / 100000 : (lease.money_factor / 100) + '%' }}
+            <!--<v-text-field class="pt-0 mt-0 ps-4" @change="lease.residual_value = $event" v-model="lease.residual_value" hide-details="auto" v-if="residual_mode == 0"></v-text-field>-->
+          </v-col>
+          <v-col cols="2" class="ps-8 pt-1">{{ lease.state_tax / 100 }}%</v-col>
+          <v-col cols="2" class="pt-0 mt-0">
+            <v-text-field class="pt-0 mt-0 ps-2" @change="lease.auto_price[0] = $event" v-model="lease.auto_price[0]" hide-details="auto"></v-text-field>
+          </v-col>
+        </v-row>
+        
+      </v-container>
+    </v-col>
+    <v-col cols="1"></v-col>
+    <v-col cols="5" class="align-right">
+      <v-container class="align-left"  class="mt-0 pt-0 mb-0 pb-0">
+        <v-row class="align-center">
+          <v-col cols="12">
+            <v-card class="headline">Buyer's Input</v-card>
+          </v-col>
+        </v-row>
+        <v-row class="align-left" no-gutters>
+          <v-col cols="2">Term (months)</v-col>
+          <v-col cols="2">Annual Miles</v-col>
+          <v-col cols="2">Down Payment</v-col>
+          <v-col cols="2">Monthly Lease</v-col>
+          <v-col cols="2">Trade In Value</v-col>
+        </v-row>
+        <v-row>
+          <v-col cols="6"></v-col>
+          <v-col cols="2">
+            <v-text-field class="pt-0 mt-0 ps-2" @change="buyer_lease.monthly_lease[1] = $event" v-model="buyer_lease.monthly_lease[1]" hide-details="auto"></v-text-field>
+          </v-col>
+          <v-col cols="4"></v-col>
+        </v-row>
+        <v-row class="align-left">
+          <v-col cols="2">
+            <v-slider
+              v-model="buyer_lease.term"
+              vertical
+              thumb-label="always"
+              step="12"
+              :min="24"
+              :max="84"
+              tick-size="6"
+            ></v-slider>
+          </v-col>
+          <v-col cols="2">
+            <v-slider
+              v-model="buyer_lease.annual_miles"
+              vertical
+              thumb-label="always"
+              :min="5000"
+              :max="20000"
+              step="100"
+              tick-size="160"
+            ></v-slider>
+          </v-col>
+          <v-col cols="2">
+            <v-slider
+              v-model="buyer_lease.down_payment"
+              vertical
+              :min="0"
+              :max="10000"
+              tick-size="101"
+              step="100"
+              thumb-label="always"
+            ></v-slider>
+          </v-col>
+          <v-col cols="2">
+            <v-range-slider
+              v-model="buyer_lease.monthly_lease"
+              :min="0"
+              :max="1500"
+              vertical
+              thumb-label="always"
+            ></v-range-slider>
+          </v-col>
+          <v-col cols="2">
+            <v-slider
+              v-model="buyer_lease.trade_in_value"
+              :min="0"
+              :max="25000"
+              tick-size="251"
+              step="100"
+              thumb-label="always"
+              vertical
+            ></v-slider>
+          </v-col>
+        </v-row>
+        <v-row class="pb-0 mb-0">
+          <v-col cols="6"></v-col>
+          <v-col cols="2">
+            <v-text-field class="pt-0 mt-0 ps-2" @change="buyer_lease.monthly_lease[0] = $event" v-model="buyer_lease.monthly_lease[0]" hide-details="auto"></v-text-field>
+          </v-col>
+          <v-col cols="2" class="ps-6 pt-1"></v-col>
+          <v-col cols="2" class="ps-8 pt-1"></v-col>
+          <v-col cols="2"></v-col>
+        </v-row>
+      </v-container>
+    </v-col>
+    <!--<v-col cols="6" class="align-left">
+      <v-container class="align-left">
+        <v-row class="align-left" no-gutters>
+          <v-col cols="2">Term</v-col>
+          <v-col cols="2">Annual Miles</v-col>
+          <v-col cols="2">Residual Value</v-col>
+          <v-col cols="2">Money Factor</v-col>
+          <v-col cols="2">State Tax Rate</v-col>
+          <v-col cols="2">Auto Price</v-col>
+        </v-row>
+        <!--<v-row no-gutters>
+          <v-col cols="2"></v-col>
+          <v-col cols="2">Annual Miles</v-col>
+          <v-col cols="2"></v-col>
+          <v-col cols="2">Money Factor</v-col>
+          <v-col cols="2"></v-col>
+          <v-col cols="2">Auto Price</v-col>
+        </v-row>
+        <v-row class="align-left">
+          <v-col cols="2">
+            <v-slider
+              v-model="value"
+              vertical
+            ></v-slider>
+          </v-col>
+          <v-col cols="2">
+            <v-slider
+              v-model="value"
+              vertical
+            ></v-slider>
+          </v-col>
+          <v-col cols="2">
+            <v-slider
+              v-model="value"
+              vertical
+            ></v-slider>
+          </v-col>
+          <v-col cols="2">
+            <v-slider
+              v-model="value"
+              vertical
+            ></v-slider>
+          </v-col>
+          <v-col cols="2">
+            <v-slider
+              v-model="value"
+              vertical
+            ></v-slider>
+          </v-col>
+          <v-col cols="2">
+            <v-slider
+              v-model="value"
+              vertical
+            ></v-slider>
+          </v-col>
+        </v-row>
+      </v-container>
+    </v-col>-->
+  </v-row>
+</v-container>
+<v-container  v-if="show_lease == 1">
+  <v-row class="align-center" class="pt-0 mt-0">
+    <v-col cols="6">
+      <v-card class="headline">Seller's Result</v-card>
+    </v-col>
+    <v-col cols="1"></v-col>
+    <v-col cols="5">
+      <v-card class="headline">Buyer's Result</v-card>
+    </v-col>
+  </v-row>
+  <v-row class="align-center">
+    <v-col cols="6">
+      <v-container>
+        <v-row>
+            <v-col cols="1"></v-col>
+            <v-col cols="10">
+              <v-range-slider
+              v-model="lease_seller_result"
+                :max="2000"
+                :min="0"
+                hide-details
+                readonly
+                thumb-label="always"
+                class="align-left pt-5"
+                @change="leaseSellerSlider"
+              >
+              <template v-slot:prepend>
+                <v-text-field
+                  :value="lease.results[0]"
+                  class="mt-0 pt-0"
+                  hide-details
+                  single-line
+                  readonly
+                  class="red--text font-weight-bold"
+                  type="number"
+                  style="width: 60px"
+                ></v-text-field>
+              </template>
+              <template v-slot:append>
+                <v-text-field
+                  readonly
+                  :value="lease.results[1]"
+                  class="mt-0 pt-0"
+                  hide-details
+                  single-line
+                  type="text"
+                  style="width: 60px"
+                ></v-text-field>
+              </template>
+              </v-range-slider>
+            </v-col>
+            <v-col cols="1"></v-col>
+          </v-row>
+      </v-container>
+    </v-col>
+    <v-col cols="1"></v-col>
+    <v-col cols="5">
+      <v-container>
+        <v-row class="align-center">
+          <v-col cols="1"></v-col>
+          <v-col cols="10">
+            <v-range-slider
+            v-model="lease_buyer_result"
+              :max="75000"
+              :min="0"
+              hide-details
+              readonly
+              thumb-label="always"
+              class="align-left pt-5"
+              @change="leaseBuyerSlider"
+            >
+            <template v-slot:prepend>
+              <v-text-field
+                :value="buyer_lease.results[0]"
+                class="mt-0 pt-0"
+                hide-details
+                single-line
+                readonly
+                class="red--text font-weight-bold"
+                type="number"
+                style="width: 60px"
+              ></v-text-field>
+            </template>
+            <template v-slot:append>
+              <v-text-field
+                readonly
+                :value="buyer_lease.results[1]"
+                class="mt-0 pt-0"
+                hide-details
+                single-line
+                type="text"
+                style="width: 60px"
+              ></v-text-field>
+            </template>
+            </v-range-slider>
+          </v-col>
+          <v-col cols="1"></v-col>
+        </v-row>
+      </v-container>
+    </v-col>
+  </v-row>
+</v-container>
+</v-app>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+<script type="text/javascript">
+  // var app = 
+  new Vue({ 
+    el: '#app',
+    vuetify: new Vuetify({}),
+    data: {
+        buyer_elig_discounts: 0,
+        buyer_min_default : 0, // buyer and seller range = min * 10
+        buyer_max_default: 10000,
+        buyer_max_update: false,
+        buyer_min: 0,
+        buyer_max: 0,
+        buyer_range: [0,0],
+        currencies: [{text: 'USD', value: 1},{text: 'CAN', value: 2},{text: 'IND', value: 3},{text: 'EURO', value: 4}],
+        currency: {text: 'USD', value: 1},
+        fin_neg_items: [{text: 'Based on Auto Price', value: 0}, {text: 'Based on Interest Rate/APR Range for every credit level', value: 1}],
+        fin_neg: {text: 'Based on Auto Price', value: 0},
+        lease_neg_items: [{text: 'Based on Auto Price [Cap Cost]', value: 0},{text: 'Based on Term (Duration)', value: 1},{text: 'Based on Money Factor/APR (Interest Rate)', value: 2}],
+        lease_neg: {text: 'Based on Auto Price [Cap Cost]', value: 0},
+        lease_neg_fac_items: [{text: 'APR', value: 0},{text: 'Money Factor', value: 1}],
+        lease_neg_fac_control: {text: 'Money Factor', value: 1},
+        lease_neg_fac: 1,
+        lease_seller_result: [0,0],
+        lease_buyer_result: [0,0],
+        neg_mode_items: [{text: 'Maximum Conversion/Sales - Low Profits - Negotiation favors buyers', value: -1, disabled: false}, 
+        {text: 'Neutral/Unbiased - Negotiation does not favor sellers or buyers', value: 0, disabled: false},
+        {text: 'Maximum Profit /Low Conversion - Negotiation favors the sellers', value: 1, disabled: false}],
+        neg_mode: {text: 'Neutral/Unbiased - Negotiation does not favor sellers or buyers', value: 0},
+        second_offer: "-",
+        seller_min_default: 850,
+        seller_max_default: 900,
+        seller_min: 0,
+        seller_max: 0,
+        seller_range: [0, 0],
+        seller_add_charges: 0,
+        show_lease: 0,
+        match: false,
+        money_factor_min: 10,
+        money_factor_max: 800,
+        option1: false,
+        option2: false,
+        option3: false,
+        price_no_disc: -1,
+        price: 0,
+        products_range_options: [
+          {value: 0, text: 'Used Cars'},
+          {value: 1, text: 'New Cars'},
+          {value: 2, text: 'Electronics'},
+          {value: 3, text: 'Appliances'},
+          {value: 4, text: 'Others'},
+        ],
+        products_range_control: {value: 0, text: 'Used Cars'},
+        quantities: [{text: 'No', value:0},{text: 'Yes', value:1}],
+        quantity: {text: 'No', value:0},
+        residual_mode_items: [{text:'Absolute Value', value:0}, {text:'% of MSRP', value:1}],
+        residual_mode_control: {text:'Absolute Value', value:0},
+        residual_mode: 0,
+        res_slider_min: 5000,
+        res_slider_max: 75000,
+        rules: [ 
+        value => value >= 0 && value <= 75000 || '0-75000 is the allowed range'
+        ],
+        /*rules_residual: [ 
+        value => value >= res_slider_min && value <= res_slider_max || res_slider_min + '-' + res_slider_max + ' is the allowed range'
+        ],*/
+        lease: {
+          auto_price: [0,3000],
+          auto_price_min: 0,
+          auto_price_max: 75000,
+          residual_value: 31245.20, // slider (0-100%) * auto_price
+          results: [0,0],
+          msrp: 5000, // 0 - 75000 de a 25
+          term: 36, // 24/36/48/60/72/84
+          state_tax: 7.25,
+          money_factor: 138 // En el layout tiene que poder cambiarse a APR. Rango: APR 0-25, MF 0.00001 to 0.10000
+        },
+        buyer_lease: {
+          term: 36,
+          annual_miles: 10000,
+          down_payment: 0, // 0-10000
+          monthly_lease: [0,0],
+          trade_in_value: 0, // slider, de 0 a 100000,
+          results: [0,0]
+        }
+    },
+    computed: {
+      resultComputed() {
+        return this.computed();
+      }
+    },
+    created() {
+      this.watchCollection(
+        ['buyer_min', 'buyer_max', 'buyer_elig_discounts', 'seller_min', 'seller_max', 'seller_add_charges'],
+        this.getPrice);
+      this.watchCollection(
+        ['lease.auto_price', 'lease.residual_mode', 'lease.residual_value', 'lease.msrp', 'lease.term', 'lease.annual_miles', 'lease.state_tax', 'lease.money_factor', 'this.lease_neg_fac'],
+        this.leaseTotalToMonth);
+      this.watchCollection(
+        ['buyer_lease.term', 'buyer_lease.annual_miles', 'buyer_lease.monthly_lease', 'buyer_lease.down_payment', 'buyer_lease.trade_in_value'],
+        this.leaseMonthToTotal)
+    },
+    mounted() {
+      this.getPrice(),
+      this.setSliders(0)
+      //this.setMinimums()
+    },
+    methods: {
+      /*setMinimums() {
+        this.seller_min= this.seller_min_default;
+        this.seller_max= this.seller_max_default;
+        this.seller_range = [this.seller_min, this.seller_max];
+        this.buyer_min= this.buyer_min_default;
+        this.buyer_max= this.buyer_max_default;
+        this.buyer_range = [this.buyer_min, this.buyer_max];
+      },*/
+      setSliders(val) {
+        var min=0, max=0;
+        switch (val) {
+          case 0: {
+            min = 0;
+            max = 50000;
+          } break;
+          case 1: {
+            min = 10000;
+            max = 80000;
+          } break;
+          case 2: {
+            min = 100;
+            max = 5000;
+          } break;
+          case 3: {
+            min = 100;
+            max = 5000;
+          } break;
+          case 4: {
+            min = 1000;
+            max = 30000;
+          } break;
+        }
+
+        this.buyer_min_default = min;
+        this.buyer_max_default = max;
+        this.seller_min_default = min;
+        this.seller_max_default = max;
+        this.buyer_range = [0.3 * max, 0.6 * max];
+        this.seller_range = [0.3 * max, 0.6 * max];
+        this.lease.auto_price_min = min;
+        this.lease.auto_price_max = max;
+        this.buyerSlider();
+        this.sellerSlider();
+      },
+      buyerSlider() {
+        this.buyer_min = this.buyer_range[0];
+        this.buyer_max = this.buyer_range[1];
+        console.log(this.buyer_range);
+      },
+      sellerSlider() {
+        this.seller_min = this.seller_range[0];
+        this.seller_max = this.seller_range[1];
+        this.lease.auto_price = [this.seller_min, this.seller_max];
+      },
+      leaseSellerSlider() {
+        this.lease_seller_result[0] = this.lease.results[0];
+        this.lease_seller_result[1] = this.lease.results[1];
+      },
+      leaseBuyerSlider() {
+        this.lease_buyer_result[0] = this.buyer_lease.results[0];
+        this.lease_buyer_result[1] = this.buyer_lease.results[1];
+      },
+      watchCollection(arr, cb) {
+        arr.forEach((val) => this.$watch(val, cb))
+      },
+      getPrice() {
+        console.log(this.buyer_min + ' ' + this.buyer_max + ' ' + this.seller_min + ' ' + this.seller_max);
+        if (this.buyer_min + this.buyer_elig_discounts >= this.seller_max) { // falta agregar eligible discounts
+          this.match = true;
+          this.price_no_disc = (this.buyer_min + this.buyer_elig_discounts + this.seller_max) / 2;
+          this.price = this.price_no_disc - this.buyer_elig_discounts + this.seller_add_charges;
+        }
+        else if (this.buyer_max + this.buyer_elig_discounts >= this.seller_min) {
+          this.match = true;
+          this.price_no_disc = (this.buyer_max + this.buyer_elig_discounts + this.seller_min) / 2;
+          this.price = this.price_no_disc - this.buyer_elig_discounts + this.seller_add_charges;
+        }
+        else {
+          this.match = false;
+          this.price = -1;
+          this.price_no_disc = -1;
+        }
+
+        return this.match;
+      },
+      leaseTotalToMonth() {
+        // down payment 0, trade in value 0
+        var cc = [0,0], md = [0,0], mic = [0, 0], mt=[0,0], tax = [0,0], result = [0,0]; //Cap. Cost, Month Depreciation, Monthly Interest Charge, Tax, final
+        var resValue = this.residual_mode == 0 ? this.lease.residual_value : this.lease.msrp;
+        var moneyFactor = this.lease_neg_fac == 1 ? this.lease.money_factor / 100000 : this.lease.money_factor / 240000;
+        var taxRate = this.lease.state_tax / 10000;
+
+        cc = [this.lease.auto_price[0], this.lease.auto_price[1]]; // omito la resta de down pay y trade in val
+        md = [(cc[0] - resValue) / this.lease.term, (cc[1] - resValue) / this.lease.term];
+        mic = [(cc[0] + resValue) * moneyFactor, (cc[1] + resValue) * moneyFactor];
+        mt = [(md[0] + mic[0]) * taxRate, (md[1] + mic[1]) * taxRate]
+        tax = [(mic[0] + md[0]) * taxRate, (mic[1] + md[1]) * taxRate];
+
+        result = [md[0] + mic[0] + tax[0], md[1] + mic[1] + tax[1]];
+
+        this.lease_seller_result = result;
+        this.lease.results = result;
+        this.buyer_lease.monthly_lease = result;
+        
+        console.log('Residual value: ' + resValue + '. Cap Cost: ' + cc[0] + ',' + cc[1]);
+        console.log('Monthly Dep: ' + md[0] + ',' + md[1] + '. Monthly Int Charge: ' + mic[0] + ', ' + mic[1]);
+        console.log('Monthly tax: ' + mt[0] + ',' + mt[1]);
+        console.log('Money factor: ' + moneyFactor);
+        console.log('Tax Rate: ' + taxRate + '. Tax: ' + tax[0] + ',' + tax[1]);
+        console.log('Result: ' + result[0] + ', ' + result[1]);
+      },
+      leaseMonthToTotal() {
+        var tc = [0,0], md = 0, mic = 0, tax = [0,0], result = [0,0]; //Cap. Cost, Month Depreciation, Monthly Interest Charge, Tax, final
+        var apr = this.lease_neg_fac == 1 ? this.lease.money_factor * 0.00024 : this.lease.money_factor / 10000;
+        var resValue = this.residual_mode == 0 ? this.lease.residual_value : this.lease.msrp;
+        var taxRate = this.lease.state_tax / 10000;
+        var ml = [this.buyer_lease.monthly_lease[0], this.buyer_lease.monthly_lease[1]];
+        console.log(ml);
+        console.log(Math.abs(ml[0] - this.lease.results[0]) + ' ' + Math.abs(ml[1] - this.lease.results[1]));
+        if (Math.abs(ml[0] - this.lease.results[0]) < 1 && Math.abs(ml[1] - this.lease.results[1]) < 1)
+          ml = [this.lease.results[0], this.lease.results[1]];
+
+        ml[0] = parseFloat(ml[0]).toFixed(2);
+        ml[1] = parseFloat(ml[1]).toFixed(2);
+        apr = parseFloat(apr).toFixed(5);
+
+        tc = [(24 * this.buyer_lease.term * ml[0]) / (1 + taxRate),(24 * this.buyer_lease.term * ml[1]) / (1 + taxRate)];
+        md = (24 + (this.buyer_lease.term * apr)) * (this.buyer_lease.down_payment + this.buyer_lease.trade_in_value);
+        mic = (24 - (this.buyer_lease.term * apr)) * resValue;
+        tax = [tc[0] + md + mic, tc[1] + md + mic];
+        result = [tax[0] / (24 + (this.buyer_lease.term * apr)), tax[1] / (24 + (this.buyer_lease.term * apr))];
+
+        console.log('Month Lease:' + ml[0] +',' + ml[1]);
+        console.log('Tax rate: ' + taxRate)
+        console.log('TC: ' + tc[0] + ',' + tc[1]);
+        console.log('APR: ' + apr);
+        console.log('MD: ' + md);
+        console.log('MIC: ' + mic)
+        console.log('Tax: ' + tax[0] + ',' + tax[1]);
+        console.log('Result: ' + result[0] + ',' + result[1]);
+
+        this.lease_buyer_result = result;
+        this.buyer_lease.results = result;
+      }
+    },
+    watch: {
+      /*buyer_min: function(val) {
+        if (!this.buyer_max_update) {
+          this.buyer_min_update = 0;
+          this.buyer_max_default = val * 10;
+          this.buyer_max_update = true;
+        }
+        //console.log(this.buyer_range);
+      },*/
+      lease_neg_fac_control: function(val) {
+        console.log('Lease ' + val)
+        if (val == 0) { // APR
+        console.log('Antes ' + this.lease.money_factor);
+           this.lease.money_factor *= 2.4;
+           console.log('Despues ' + this.lease.money_factor);
+           this.money_factor_min = 0;
+           this.money_factor_max = 2500;
+           
+        }
+        else { // % MSPR
+          console.log('Antes ' + this.lease.money_factor);
+          this.lease.money_factor /= 2.4;
+          console.log('Despues ' + this.lease.money_factor);
+          this.money_factor_min = 1;
+          this.money_factor_max = 800;
+        }
+        this.lease_neg_fac = val;
+      },
+      residual_mode_control: function(val) {
+        this.residual_mode = val;
+      },
+      products_range_control: function (val) {
+        this.setSliders(val);
+      }
+      /*residual_mode: function(val) {
+        console.log(this.residual_mode);
+        if (this.residual_mode == 0) { // ABSOLUT
+          // 5000 - 75000
+          this.res_slider_min = 5000;
+          this.res_slider_max = 75000;
+          this.lease.residual_value *= this.lease.auto_price / 100;
+        }
+        else {
+          this.res_slider_min = 0;
+          this.res_slider_max = 100;
+          this.lease.residual_value = (this.lease.residual_value / this.lease.auto_price) * 100;
+        }
+      }*/
+    }
+  });
+</script>
+<style>
+  @import './css/style.css';
+</style>
+<!-- The core Firebase JS SDK is always required and must be listed first -->
+<script src="/__/firebase/8.7.1/firebase-app.js"></script>
+
+<!-- TODO: Add SDKs for Firebase products that you want to use
+     https://firebase.google.com/docs/web/setup#available-libraries -->
+
+<!-- Initialize Firebase -->
+<script src="/__/firebase/init.js"></script>
+</body>
+</html>

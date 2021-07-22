@@ -1,0 +1,43 @@
+body {
+  font-family: Calibri; }
+
+table {
+  font-size: 1em; }
+
+.ui-draggable, .ui-droppable {
+  background-position: top; }
+
+.ui-slider-horizontal {
+  width: 30% !important; }
+
+#header {
+  	/*background-image: url('images/header.png');
+  	background-size: contain;
+      background-repeat: no-repeat;
+      width: 30%;
+  	
+  	margin-left: -2%;
+  	padding-top: 10%; */ }
+  #header #logo {
+    width: 30%;
+    margin-left: -2%; }
+
+.left {
+  float: left; }
+
+.ui-widget-header {
+  background-color: #f6931f; }
+
+#lease-TM-params > span {
+  height: 120px;
+  float: left;
+  margin: 15px; }
+
+.price {
+  border: 0;
+  color: #f00;
+  font-weight: bold; }
+
+/* #000080 seller, #ADD8E6 buyer */
+
+/*# sourceMappingURL=style.css.map */
